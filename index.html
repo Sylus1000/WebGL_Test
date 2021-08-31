@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebGL-Demo</title>
+    <style>
+        body{
+            background-color: aquamarine;
+            margin: 20px 0px 0px 20px;
+        }
+        canvas{
+            background-color: white;
+            border: 4px solid black;
+            width: 80vw;
+            height: 50vw;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="c"></canvas>
+    <script id="v" type="notjs">
+        attribute vec2 a_position;
+        uniform vec2 u_resolution;
+        void main(){
+            vec2 zeroToOne = a_position/u_resolution;
+            vec2 zeroToTwo = zeroToOne * 2.0;
+            vec2 clipSpace = zeroToTwo - 1.0;
+            gl_Position = vec4(clipSpace.x,clipSpace.y*(-1.0),1.0,1.0);
+        }
+    </script>
+    <script id="f" type="notjs">
+        precision mediump float;
+        uniform vec4 u_color;
+        void main(){
+            gl_FragColor = u_color;
+        }
+    </script>
+    <script src="webgl-utils.js"></script>
+    <script src="https://greggman.github.io/webgl-lint/webgl-lint.js" crossorigin></script>
+    <script>
+
+        function Graphics(canvasID,vertexShaderID,fragmentShaderID){
+            var canvas = document.getElementById(canvasID);
+            var gl = canvas.getContext("webgl");
+            if(!gl)throw new Error("WebGL not supported !");
+            var program = webglUtils.createProgramFromScripts(gl,[vertexShaderID,fragmentShaderID]);
+            var a_position = gl.getAttribLocation(program,"a_position");
+            var u_resolution = gl.getUniformLocation(program,"u_resolution");
+            var u_color = gl.getUniformLocation(program,"u_color"); 
+            console.log("[Graphics] WebGL initialized !");
+
+            this.drawTriangle = function(x,y,w,h,r,g,b){
+                initDrawing();
+                r = rgbToOne(r);
+                g = rgbToOne(g);
+                b = rgbToOne(b);
+                let vbo = gl.createBuffer();
+                gl.enableVertexAttribArray(a_position);
+                gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+                const data = [
+                    x,y,
+                    x,y+h,
+                    x+w,y,
+                ]
+                gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);
+                gl.vertexAttribPointer(a_position,2,gl.FLOAT,false,0,0);
+                gl.uniform2f(u_resolution,gl.canvas.width,gl.canvas.height);
+                gl.uniform4f(u_color,r,g,b,1.0);
+                gl.drawArrays(gl.TRIANGLES,0,3);
+                gl.deleteBuffer(vbo);
+                console.log("[Graphics] Method-call : drawTriangle()");
+            }
+
+            var rgbToOne = function(value){
+                if(value===0)return 0;
+                else return value/255;
+            }
+
+            var initDrawing = function(){
+                webglUtils.resizeCanvasToDisplaySize(gl.canvas);
+                gl.viewport(0,0,gl.canvas.width,gl.canvas.height);
+                gl.useProgram(program);
+            }
+
+            this.drawRect = function(x,y,w,h,r,g,b){
+                initDrawing();
+                r = rgbToOne(r);
+                g = rgbToOne(g);
+                b = rgbToOne(b);
+                const data = [
+                    x,y,
+                    x+w,y,
+                    x,y+h,
+                    x,y+h,
+                    x+w,y+h,
+                    x+w,y,
+                ];
+                let vbo = gl.createBuffer();
+                gl.bindBuffer(gl.ARRAY_BUFFER,vbo);
+                gl.bufferData(gl.ARRAY_BUFFER,new Float32Array(data),gl.STATIC_DRAW);
+                gl.enableVertexAttribArray(a_position);
+                gl.vertexAttribPointer(a_position,2,gl.FLOAT,false,0,0);
+                gl.uniform2f(u_resolution,gl.canvas.width,gl.canvas.height);
+                gl.uniform4f(u_color,r,g,b,1.0);
+                gl.drawArrays(gl.TRIANGLES,0,6);
+                gl.deleteBuffer(vbo);
+                console.log("[Graphics] Method-call : drawRect()");
+            }
+        }
+        function debug(){
+            let g = new Graphics("c","v","f");
+            g.drawRect(10,10,200,100,255,0,0);
+            g.drawTriangle(50,50,200,100,0,255,0);
+        }
+        debug();
+    </script>
+</body>
+</html>
